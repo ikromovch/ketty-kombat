@@ -1,21 +1,61 @@
-MIT License
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-Copyright (c) 2025 ikromovch
+# Bot tokeni
+TOKEN = "YOUR_BOT_TOKEN"
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+# Foydalanuvchi malumoti saqlanishi
+user_data = {}
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+# Har bir darajaga mos rasm URL'lari
+level_images = {
+    1: "https://github.com/yourusername/repository/level_1.png",
+    2: "https://github.com/yourusername/repository/level_2.png",
+    3: "https://github.com/yourusername/repository/level_3.png",
+    # va hokazo...
+}
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+# Bot boshlanishi
+def start(update: Update, context: CallbackContext):
+    user_id = update.message.chat.id
+    user_data[user_id] = {'score': 0, 'level': 1}
+    update.message.reply_text("Salom! Ketty Kombat o'yiniga xush kelibsiz! Tugmaga bosib ball to'plashni boshlang!")
+
+# Tugmaga bosish
+def button(update: Update, context: CallbackContext):
+    user_id = update.message.chat.id
+    if user_id not in user_data:
+        update.message.reply_text("Iltimos, avval /start komandasini yozing.")
+        return
+
+    # Ball to'plash
+    user_data[user_id]['score'] += 1
+
+    # Daraja oshirish
+    level = user_data[user_id]['score'] // 10 + 1
+    if level > user_data[user_id]['level']:
+        user_data[user_id]['level'] = level
+        update.message.reply_text(f"Tabriklaymiz! Siz darajani oshirdingiz! Yangi daraja: {level}")
+
+    # Yangi darajaga mos rasmni yuborish
+    if level in level_images:
+        update.message.reply_photo(level_images[level])
+
+    # Hozirgi ball va darajani ko'rsatish
+    update.message.reply_text(f"Sizning hozirgi ballingiz: {user_data[user_id]['score']}\nDaraja: {user_data[user_id]['level']}")
+
+# Botni ishga tushirish
+def main():
+    updater = Updater(TOKEN, use_context=True)
+
+    # Komandalar va tugmalarni sozlash
+    dispatcher = updater.dispatcher
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, button))
+
+    # Botni ishga tushirish
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == "__main__":
+    main()
